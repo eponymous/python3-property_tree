@@ -425,7 +425,7 @@ PyPropertyTree_get(PyPropertyTree *self, PyObject *args, PyObject *kwargs)
 
 PyDoc_STRVAR(PyPropertyTree_index__doc__,
 "index(key, start=0, end=-1)\n\n"
-"    Return zero-based index in the list of the first item\n"
+"    Return zero-based index in the tree of the first item\n"
 "    whose value is equal to key\n");
 
 
