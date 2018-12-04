@@ -334,14 +334,23 @@ PyPropertyTree_extend(PyPropertyTree *self, PyObject *obj)
     while ((item = PyIter_Next(iter)) != NULL) {
         const char *key;
         Py_ssize_t key_len;
-        PyPropertyTree *value;
+        PyObject *value;
+        std::string value_std;
 
-        if (!PyArg_ParseTuple(item, (char *) "s#O!", &key, &key_len, &PyPropertyTree_Type, &value)) {
+        if (!PyArg_ParseTuple(item, (char *) "s#O", &key, &key_len, &value)) {
             Py_DECREF(item);
             return NULL;
         }
 
-        self->obj->insert(self->obj->end(), {std::string(key, key_len), *value->obj});
+        if (PyObject_IsInstance(value, (PyObject *) &PyPropertyTree_Type)) {
+            self->obj->insert(self->obj->end(), {std::string(key, key_len), *((PyPropertyTree *)value)->obj});
+        } else if (py_value_to_string(value, value_std) == 0) {
+            boost::property_tree::ptree tree(value_std);
+            self->obj->insert(self->obj->end(), {std::string(key, key_len), tree});
+        } else {
+            PyErr_SetObject(PyExc_ValueError, value);
+            return NULL;
+        }
 
         Py_DECREF(item);
     }
