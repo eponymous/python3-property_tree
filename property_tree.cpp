@@ -350,6 +350,7 @@ PyPropertyTree_extend(PyPropertyTree *self, PyObject *obj)
             self->obj->insert(self->obj->end(), {std::string(key, key_len), tree});
         } else {
             PyErr_SetObject(PyExc_ValueError, value);
+            Py_DECREF(item);
             return NULL;
         }
 
