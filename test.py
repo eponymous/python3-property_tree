@@ -113,15 +113,15 @@ class TestTree(unittest.TestCase):
         pt_orig.put("key1.key4", "data3")
         pt_orig.put("key2",      "data4")
 
-        pt1 = copy.copy(pt_orig)
-        pt2 = copy.copy(pt_orig)
+        pt1 = ptree.Tree(pt_orig)
+        pt2 = ptree.Tree(pt_orig)
 
         self.assertEqual(pt1, pt2)
         self.assertEqual(pt2, pt1)
 
         # Test originals with modified case
-        pt1 = copy.copy(pt_orig)
-        pt2 = copy.copy(pt_orig)
+        pt1 = ptree.Tree(pt_orig)
+        pt2 = ptree.Tree(pt_orig)
 
         pt1.popitem()
         pt1.put("KEY2", ptree.Tree("data4"))
