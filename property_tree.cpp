@@ -344,10 +344,10 @@ PyPropertyTree_extend(PyPropertyTree *self, PyObject *obj)
         }
 
         if (PyObject_IsInstance(value, (PyObject *) &PyPropertyTree_Type)) {
-            self->obj->insert(self->obj->end(), {std::string(key, key_len), *((PyPropertyTree *)value)->obj});
+            self->obj->push_back({std::string(key, key_len), *((PyPropertyTree *)value)->obj});
         } else if (py_value_to_string(value, value_std) == 0) {
             boost::property_tree::ptree tree(value_std);
-            self->obj->insert(self->obj->end(), {std::string(key, key_len), tree});
+            self->obj->push_back({std::string(key, key_len), tree});
         } else {
             PyErr_SetObject(PyExc_ValueError, value);
             Py_DECREF(item);
@@ -434,7 +434,6 @@ PyDoc_STRVAR(PyPropertyTree_index__doc__,
 static PyObject*
 PyPropertyTree_index(PyPropertyTree *self, PyObject *args, PyObject *kwargs)
 {
-
     int start = 0;
     int end = self->obj->size();
     int index = 0;
@@ -484,11 +483,12 @@ PyPropertyTree_insert(PyPropertyTree *self, PyObject *args, PyObject *kwargs)
     int index;
     const char *key;
     Py_ssize_t key_len;
-    PyPropertyTree *value;
+    PyObject *value;
+    std::string value_std;
+    boost::property_tree::ptree::iterator retval, iter;
     const char *keywords[] = {"index", "key", "value", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "is#O!:insert", (char **) keywords,
-                                     &index, &key, &key_len, &PyPropertyTree_Type, &value)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "is#O:insert", (char **) keywords, &index, &key, &key_len, &value)) {
         return NULL;
     }
 
@@ -500,13 +500,22 @@ PyPropertyTree_insert(PyPropertyTree *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    boost::property_tree::ptree::iterator iter(self->obj->begin());
+    iter = self->obj->begin();
 
     for (int i = 0; i < index; i++)
         ++iter;
 
-    return (PyObject*)PyPropertyTree_New(&self->obj->insert(iter, {std::string(key, key_len), *value->obj})->second,
-                                         PTREE_FLAG_OBJECT_NOT_OWNED);
+    if (PyObject_IsInstance(value, (PyObject *) &PyPropertyTree_Type)) {
+        retval = self->obj->insert(iter, {std::string(key, key_len), *((PyPropertyTree *)value)->obj});
+    } else if (py_value_to_string(value, value_std) == 0) {
+        boost::property_tree::ptree tree(value_std);
+        retval = self->obj->insert(iter, {std::string(key, key_len), tree});
+    } else {
+        PyErr_SetObject(PyExc_ValueError, value);
+        return NULL;
+    }
+
+    return (PyObject*)PyPropertyTree_New(&retval->second, PTREE_FLAG_OBJECT_NOT_OWNED);
 }
 
 
