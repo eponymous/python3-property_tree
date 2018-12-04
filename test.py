@@ -133,8 +133,8 @@ class TestTree(unittest.TestCase):
         pt1 = copy.copy(pt_orig)
         pt2 = copy.copy(pt_orig)
 
-        pt1.put("key1.key5", ptree.Tree("."))
-        pt2.put("key1.key5", ptree.Tree("."))
+        pt1.setdefault("key1.key5")
+        pt2.setdefault("key1.key5", ptree.Tree("none"))
 
         self.assertEqual(pt1, pt2)
         self.assertEqual(pt2, pt1)
