@@ -111,7 +111,8 @@ struct ptree_sort_helper
 };
 
 
-int py_value_to_string(PyObject *value, std::string &str)
+static int
+py_value_to_string(PyObject *value, std::string &str)
 {
     const char *value_str;
     Py_ssize_t value_len;
