@@ -3,6 +3,17 @@ import copy
 import property_tree as ptree
 
 class TestTree(unittest.TestCase):
+    def test_keyword_constructor(self):
+        pt = ptree.Tree(key1="data1",
+                        key2="data2",
+                        key3="data3",
+                        key4="data4")
+
+        self.assertEqual(pt.key1, "data1")
+        self.assertEqual(pt.key2, "data2")
+        self.assertEqual(pt.key3, "data3")
+        self.assertEqual(pt.key4, "data4")
+
     def test_insertions(self):
         pt = ptree.Tree()
 
