@@ -1332,25 +1332,52 @@ PyPropertyTree__tp_str(PyPropertyTree *self)
 static int
 PyPropertyTree__tp_init(PyPropertyTree *self, PyObject *args, PyObject *kwargs)
 {
-    PyObject *value = NULL;
+    PyObject *key, *value = NULL;
     std::string value_std;
-    const char *keywords[] = {"value", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "|O", (char **) keywords, &value)) {
-        return -1;
-    }
+    // dict style keyword constructor
+    // t = Tree(a=1, b=2, c=3)
+    // len(t)                        -> 3
+    // t.keys()                      -> ['a', 'b', 'c']
+    // [v.value for v in t.values()] -> ['1', '2', '3']
+    if (kwargs != NULL && PyTuple_GET_SIZE(args) == 0 && PyArg_ValidateKeywordArguments(kwargs)) {
+        Py_ssize_t pos = 0;
+        self->obj = new boost::property_tree::ptree();
 
-    if (value) {
-        if (PyObject_IsInstance(value, (PyObject*)&PyPropertyTree_Type)) {
-            self->obj = new boost::property_tree::ptree(*((PyPropertyTree*)value)->obj);
-        } else if (py_value_to_string(value, value_std) == 0) {
-            self->obj = new boost::property_tree::ptree(value_std);
-        } else {
-            PyErr_Format(PyExc_TypeError, "unsupported argument type: '%s'", Py_TYPE(value)->tp_name);
+        while (PyDict_Next(kwargs, &pos, &key, &value)) {
+            Py_ssize_t key_len;
+            const char *c_key = PyUnicode_AsUTF8AndSize(key, &key_len);
+
+            if (PyObject_IsInstance(value, (PyObject *) &PyPropertyTree_Type)) {
+                self->obj->push_back({std::string(c_key, key_len), *((PyPropertyTree *)value)->obj});
+            } else if (py_value_to_string(value, value_std) == 0) {
+                boost::property_tree::ptree tree(value_std);
+                self->obj->push_back({std::string(c_key, key_len), tree});
+            } else {
+                PyErr_SetObject(PyExc_ValueError, value);
+                return -1;
+            }
+        }
+    // regular t = Tree("foo") value constructor
+    } else if (PyArg_ParseTuple(args, (char *) "|O", &value)) {
+        if (kwargs != NULL) {
+            PyErr_Format(PyExc_TypeError, "Tree() doesn't support mixed keyword/value args");
             return -1;
         }
+        if (value) {
+            if (PyObject_IsInstance(value, (PyObject*)&PyPropertyTree_Type)) {
+                self->obj = new boost::property_tree::ptree(*((PyPropertyTree*)value)->obj);
+            } else if (py_value_to_string(value, value_std) == 0) {
+                self->obj = new boost::property_tree::ptree(value_std);
+            } else {
+                PyErr_Format(PyExc_TypeError, "unsupported argument type: '%s'", Py_TYPE(value)->tp_name);
+                return -1;
+            }
+        } else {
+            self->obj = new boost::property_tree::ptree();
+        }
     } else {
-        self->obj = new boost::property_tree::ptree();
+        return -1;
     }
 
     self->flags = PTREE_FLAG_NONE;
