@@ -1216,6 +1216,53 @@ PyPropertyTree__nb_float(PyPropertyTree *self)
 }
 
 
+static PyObject*
+PyPropertyTree__nb_or(PyObject *py_left, PyObject *py_right)
+{
+    PyPropertyTree *left;
+    PyPropertyTree *right;
+    PyPropertyTree *retval;
+
+    if (!PyObject_IsInstance(py_left, (PyObject*) &PyPropertyTree_Type) ||
+        !PyObject_IsInstance(py_right, (PyObject*) &PyPropertyTree_Type)) {
+        Py_INCREF(Py_NotImplemented);
+        return Py_NotImplemented;
+    }
+
+    left = (PyPropertyTree*) py_left;
+    right = (PyPropertyTree*) py_right;
+
+    retval = PyPropertyTree_New(new boost::property_tree::ptree(*left->obj), PTREE_FLAG_NONE);
+
+    for (boost::property_tree::ptree::iterator iter = right->obj->begin(); iter != right->obj->end(); iter++) {
+        retval->obj->put_child(iter->first, iter->second);
+    }
+
+    return (PyObject*)retval;
+}
+
+
+static PyObject*
+PyPropertyTree__nb_inplace_or(PyPropertyTree *self, PyObject *py_right)
+{
+    PyPropertyTree *right;
+
+    if (!PyObject_IsInstance(py_right, (PyObject*) &PyPropertyTree_Type)) {
+        Py_INCREF(Py_NotImplemented);
+        return Py_NotImplemented;
+    }
+
+    right = (PyPropertyTree*) py_right;
+
+    for (boost::property_tree::ptree::iterator iter = right->obj->begin(); iter != right->obj->end(); iter++) {
+        self->obj->put_child(iter->first, iter->second);
+    }
+
+    Py_INCREF((PyObject*)self);
+    return (PyObject*)self;
+}
+
+
 static PyNumberMethods PyPropertyTree__tp_as_number = {
     (binaryfunc)  NULL,                                         /* nb_add */
     (binaryfunc)  NULL,                                         /* nb_subtract */
@@ -1232,7 +1279,7 @@ static PyNumberMethods PyPropertyTree__tp_as_number = {
     (binaryfunc)  NULL,                                         /* nb_rshift */
     (binaryfunc)  NULL,                                         /* nb_and */
     (binaryfunc)  NULL,                                         /* nb_xor */
-    (binaryfunc)  NULL,                                         /* nb_or */
+    (binaryfunc)  PyPropertyTree__nb_or,                        /* nb_or */
     (unaryfunc)   PyPropertyTree__nb_int,                       /* nb_int */
     (void *)      NULL,                                         /* nb_reserved */
     (unaryfunc)   PyPropertyTree__nb_float,                     /* nb_float */
@@ -1245,7 +1292,7 @@ static PyNumberMethods PyPropertyTree__tp_as_number = {
     (binaryfunc)  NULL,                                         /* nb_inplace_rshift */
     (binaryfunc)  NULL,                                         /* nb_inplace_and */
     (binaryfunc)  NULL,                                         /* nb_inplace_xor */
-    (binaryfunc)  NULL,                                         /* nb_inplace_or */
+    (binaryfunc)  PyPropertyTree__nb_inplace_or,                /* nb_inplace_or */
     (binaryfunc)  NULL,                                         /* nb_floor_divide */
     (binaryfunc)  NULL,                                         /* nb_true_divide */
     (binaryfunc)  NULL,                                         /* nb_inplace_floor_divide */
