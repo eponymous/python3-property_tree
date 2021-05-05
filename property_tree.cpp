@@ -1304,27 +1304,120 @@ static PyNumberMethods PyPropertyTree__tp_as_number = {
 
 
 static Py_ssize_t
-PyPropertyTree__sq_length(PyPropertyTree *self)
+PyPropertyTree_mp_length(PyObject *self)
 {
-    return self->obj->size();
+    return ((PyPropertyTree*)self)->obj->size();
 }
 
 
-static PyObject*
-PyPropertyTree__sq_item(PyPropertyTree *self, Py_ssize_t index)
+static PyObject *
+PyPropertyTree_mp_subscript(PyObject *self, PyObject *key)
 {
-    if (index >= 0 && index < (Py_ssize_t)self->obj->size()) {
-        boost::property_tree::ptree::iterator iter(self->obj->begin());
+    const char *path;
+    Py_ssize_t path_len;
+    boost::property_tree::ptree *retval;
+    boost::property_tree::ptree *tree = ((PyPropertyTree*)self)->obj;
 
-        for (Py_ssize_t i = 0; i < index; i++)
-            ++iter;
+    if (PyIndex_Check(key)) {
+        int index = PyLong_AsSsize_t(key);
 
-        return (PyObject*)PyPropertyTree_New(&iter->second, PTREE_FLAG_OBJECT_NOT_OWNED);
+        if (index < 0)
+            index += (Py_ssize_t)tree->size();
+
+        if (index >= 0 && index < (Py_ssize_t)tree->size()) {
+            boost::property_tree::ptree::iterator iter(tree->begin());
+
+            for (Py_ssize_t i = 0; i < index; i++)
+                ++iter;
+
+            return (PyObject*)PyPropertyTree_New(&iter->second, PTREE_FLAG_OBJECT_NOT_OWNED);
+        }
+
+        PyErr_Format(PyExc_IndexError, "%s index out of range", Py_TYPE(self)->tp_name);
+        return NULL;
+
+    } else if (!PyUnicode_Check(key)) {
+        PyErr_SetObject(PyExc_KeyError, key);
+        return NULL;
     }
 
-    PyErr_Format(PyExc_IndexError, "%s index out of range", Py_TYPE(self)->tp_name);
-    return NULL;
+    path = PyUnicode_AsUTF8AndSize(key, &path_len);
+
+    try {
+        retval = &tree->get_child(std::string(path, path_len));
+    } catch (boost::property_tree::ptree_bad_path const &exc) {
+        PyErr_SetObject(PyExc_KeyError, key);
+        return NULL;
+    }
+
+    return (PyObject*)PyPropertyTree_New(retval, PTREE_FLAG_OBJECT_NOT_OWNED);
 }
+
+
+static int
+PyPropertyTree_mp_ass_subscript(PyObject *self, PyObject *key, PyObject *value)
+{
+    std::string path_std;
+    std::string value_std;
+    boost::property_tree::ptree *tree = ((PyPropertyTree*)self)->obj;
+
+    if (PyIndex_Check(key)) {
+        int index = PyLong_AsSsize_t(key);
+
+        if (index < 0)
+            index += (Py_ssize_t)tree->size();
+
+        if (index >= 0 && index < (Py_ssize_t)tree->size()) {
+            boost::property_tree::ptree::iterator iter(tree->begin());
+
+            for (Py_ssize_t i = 0; i < index; i++)
+                ++iter;
+
+            path_std = iter->first;
+        } else {
+            PyErr_Format(PyExc_IndexError, "%s index out of range", Py_TYPE(self)->tp_name);
+            return -1;
+        }
+
+    } else if (PyUnicode_Check(key)) {
+        Py_ssize_t path_len;
+        const char *path = PyUnicode_AsUTF8AndSize(key, &path_len);
+        path_std = std::string(path, path_len);
+    } else {
+        PyErr_SetObject(PyExc_KeyError, key);
+        return -1;
+    }
+
+    if (value == NULL) {
+        for (boost::property_tree::ptree::iterator iter = tree->begin(); iter != tree->end(); iter++) {
+            if (iter->first == path_std) {
+                tree->erase(iter);
+                return 0;
+            }
+        }
+        PyErr_SetObject(PyExc_KeyError, key);
+        return -1;
+    } else {
+        if (PyObject_IsInstance(value, (PyObject *) &PyPropertyTree_Type)) {
+            tree->put_child(path_std, *(((PyPropertyTree*)value)->obj));
+        } else if (py_value_to_string(value, value_std) == 0) {
+            boost::property_tree::ptree value_tree(value_std);
+            tree->put_child(path_std, value_tree);
+        } else {
+            PyErr_SetObject(PyExc_ValueError, value);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+static PyMappingMethods PyPropertyTree_as_mapping = {
+    PyPropertyTree_mp_length,
+    PyPropertyTree_mp_subscript,
+    PyPropertyTree_mp_ass_subscript,
+};
 
 
 static int
@@ -1354,6 +1447,7 @@ PyPropertyTree__sq_contains(PyPropertyTree *self, PyObject *py_value)
     return 0;
 }
 
+
 PyObject*
 PyPropertyTree__sq_inplace_concat(PyPropertyTree *self, PyObject *py_value)
 {
@@ -1372,11 +1466,12 @@ PyPropertyTree__sq_inplace_concat(PyPropertyTree *self, PyObject *py_value)
     return NULL;
 }
 
+
 static PySequenceMethods PyPropertyTree__tp_as_sequence = {
-    (lenfunc) PyPropertyTree__sq_length,                        /* sq_length */
+    (lenfunc) NULL,                                             /* sq_length */
     (binaryfunc) NULL,                                          /* sq_concat */
     (ssizeargfunc) NULL,                                        /* sq_repeat */
-    (ssizeargfunc) PyPropertyTree__sq_item,                     /* sq_item */
+    (ssizeargfunc) NULL,                                        /* sq_item */
     NULL,
     (ssizeobjargproc) NULL,                                     /* sq_ass_item */
     NULL,
@@ -1560,7 +1655,7 @@ PyTypeObject PyPropertyTree_Type = {
     (reprfunc)NULL,                                             /* tp_repr */
     (PyNumberMethods*)&PyPropertyTree__tp_as_number,            /* tp_as_number */
     (PySequenceMethods*)&PyPropertyTree__tp_as_sequence,        /* tp_as_sequence */
-    (PyMappingMethods*)NULL,                                    /* tp_as_mapping */
+    (PyMappingMethods*)&PyPropertyTree_as_mapping,              /* tp_as_mapping */
     (hashfunc)NULL,                                             /* tp_hash */
     (ternaryfunc)NULL,                                          /* tp_call */
     (reprfunc)PyPropertyTree__tp_str,                           /* tp_str */
@@ -1647,7 +1742,7 @@ PyPropertyTree_Iter__tp_iternext(PyPropertyTree_Iter *self)
 
         ++(*self->iterator);
 
-        const std::string &key = iter->first;
+        std::string key = iter->first;
 
         PyPropertyTree *py_ptree = PyPropertyTree_New(&iter->second, PTREE_FLAG_OBJECT_NOT_OWNED);
 
