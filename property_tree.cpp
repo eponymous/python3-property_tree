@@ -894,6 +894,34 @@ PyPropertyTree__copy__(PyPropertyTree *self)
 }
 
 
+static PyObject *
+PyPropertyTree__reduce__(PyPropertyTree *self)
+{
+    PyObject *args, *py_iter;
+
+    if (self->obj->data() == "") {
+        args = PyTuple_New(0);
+    } else {
+        args = PyTuple_New(1);
+        PyTuple_SET_ITEM(args, 0, PyUnicode_DecodeUTF8(self->obj->data().c_str(), self->obj->data().size(), NULL));
+    }
+
+    if (self->obj->begin() == self->obj->end()) {
+        Py_INCREF(Py_None);
+        py_iter = Py_None;
+    } else {
+        PyPropertyTree_Iter *iter = PyObject_GC_New(PyPropertyTree_Iter, &PyPropertyTree_IterType);
+        Py_INCREF(self);
+        iter->container = self;
+        iter->iterator = new boost::property_tree::ptree::iterator(self->obj->begin());
+        iter->callable = NULL;
+        py_iter = (PyObject*)iter;
+    }
+
+    return Py_BuildValue("ONOON", (PyObject*)&PyPropertyTree_Type, args, Py_None, Py_None, py_iter);
+}
+
+
 static PyMethodDef PyPropertyTree_methods[] = {
     {(char *) "add",
      (PyCFunction) PyPropertyTree_add,
@@ -989,6 +1017,10 @@ static PyMethodDef PyPropertyTree_methods[] = {
      PyPropertyTree_values__doc__},
     {(char *) "__copy__",
      (PyCFunction) PyPropertyTree__copy__,
+     METH_NOARGS,
+     NULL},
+    {(char *) "__reduce__",
+     (PyCFunction) PyPropertyTree__reduce__,
      METH_NOARGS,
      NULL},
     {NULL, NULL, 0, NULL}
