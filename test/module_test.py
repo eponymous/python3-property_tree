@@ -1,13 +1,11 @@
 import unittest
 import copy
-import property_tree as ptree
+import proptree as ptree
+
 
 class TestTree(unittest.TestCase):
     def test_keyword_constructor(self):
-        pt = ptree.Tree(key1="data1",
-                        key2="data2",
-                        key3="data3",
-                        key4="data4")
+        pt = ptree.Tree(key1="data1", key2="data2", key3="data3", key4="data4")
 
         self.assertEqual(pt.key1, "data1")
         self.assertEqual(pt.key2, "data2")
@@ -28,16 +26,16 @@ class TestTree(unittest.TestCase):
         it4 = it1.append("key4", tmp4)
         it2 += it1
 
-        self.assertEqual(pt.get("key1", ""),      "data1")
-        self.assertEqual(pt.get("key2", ""),      "data2")
+        self.assertEqual(pt.get("key1", ""), "data1")
+        self.assertEqual(pt.get("key2", ""), "data2")
         self.assertEqual(pt.get("key1.key3", ""), "data3")
         self.assertEqual(pt.get("key1.key4", ""), "data4")
         self.assertEqual(pt.get("key2.key3", ""), "data3")
         self.assertEqual(pt.get("key2.key4", ""), "data4")
 
         ## __getattribute__
-        self.assertEqual(pt.key1,      "data1")
-        self.assertEqual(pt.key2,      "data2")
+        self.assertEqual(pt.key1, "data1")
+        self.assertEqual(pt.key2, "data2")
         self.assertEqual(pt.key1.key3, "data3")
         self.assertEqual(pt.key1.key4, "data4")
         self.assertEqual(pt.key2.key3, "data3")
@@ -78,7 +76,7 @@ class TestTree(unittest.TestCase):
         # Test clear
         pt.clear()
         self.assertTrue(pt.empty())
-        self.assertEqual(pt.value, '')
+        self.assertEqual(pt.value, "")
 
     def test_insert(self):
         pt = ptree.Tree()
@@ -89,9 +87,9 @@ class TestTree(unittest.TestCase):
         tmp4 = ptree.Tree("data4")
 
         pt.insert(-1, "key3", tmp3)
-        pt.insert(0,  "key2", tmp2)
+        pt.insert(0, "key2", tmp2)
         pt.insert(-1, "key4", tmp4)
-        pt.insert(0,  "key1", tmp1)
+        pt.insert(0, "key1", tmp1)
 
         # Check sequence
         keys = pt.keys()
@@ -102,15 +100,15 @@ class TestTree(unittest.TestCase):
 
         # Test pops
         pt.popitem()
-        self.assertEqual(pt[0],  "data1")
+        self.assertEqual(pt[0], "data1")
         self.assertEqual(pt[-1], "data3")
 
         pt.popitem(0)
-        self.assertEqual(pt[0],  "data2")
+        self.assertEqual(pt[0], "data2")
         self.assertEqual(pt[-1], "data3")
 
         pt.popitem(-1)
-        self.assertEqual(pt[0],  "data2")
+        self.assertEqual(pt[0], "data2")
         self.assertEqual(pt[-1], "data2")
 
         pt.popitem(0)
@@ -119,10 +117,10 @@ class TestTree(unittest.TestCase):
     def test_comparison(self):
         # Prepare original
         pt_orig = ptree.Tree("data")
-        pt_orig.put("key1",      "data1")
+        pt_orig.put("key1", "data1")
         pt_orig.put("key1.key3", "data2")
         pt_orig.put("key1.key4", "data3")
-        pt_orig.put("key2",      "data4")
+        pt_orig.put("key2", "data4")
 
         pt1 = ptree.Tree(pt_orig)
         pt2 = ptree.Tree(pt_orig)
@@ -190,17 +188,17 @@ class TestTree(unittest.TestCase):
     def test_get_set(self):
         # Do insertions
         pt = ptree.Tree()
-        pt.put("k1",       1)
-        pt.put("k2.k",     2.5)
-        pt.put("k3.k.k",   "ala ma kota")
+        pt.put("k1", 1)
+        pt.put("k2.k", 2.5)
+        pt.put("k3.k.k", "ala ma kota")
         pt.put("k5.k.k.f", False)
         pt.put("k5.k.k.t", True)
         pt.setdefault("k5.k.k.n")
 
         # Do extractions via get
-        self.assertEqual(pt.get("k1"),         1)
-        self.assertEqual(pt.get("k2.k"),     2.5)
-        self.assertEqual(pt.get("k3.k.k"),   "ala ma kota")
+        self.assertEqual(pt.get("k1"), 1)
+        self.assertEqual(pt.get("k2.k"), 2.5)
+        self.assertEqual(pt.get("k3.k.k"), "ala ma kota")
         self.assertEqual(pt.get("k5.k.k.f"), False)
         self.assertEqual(pt.get("k5.k.k.t"), True)
         self.assertEqual(pt.get("k5.k.k.n"), None)
@@ -212,17 +210,17 @@ class TestTree(unittest.TestCase):
         pt = ptree.Tree()
 
         # __setattribute__
-        pt.k       = 1
-        pt.k.k     = 2.5
-        pt.k.k.k   = "ala ma kota"
+        pt.k = 1
+        pt.k.k = 2.5
+        pt.k.k.k = "ala ma kota"
         pt.k.k.k.f = False
         pt.k.k.k.t = True
         pt.k.k.k.n = None
 
         # __getattribute__
-        self.assertEqual(pt.k,       1)
-        self.assertEqual(pt.k.k,     2.5)
-        self.assertEqual(pt.k.k.k,   "ala ma kota")
+        self.assertEqual(pt.k, 1)
+        self.assertEqual(pt.k.k, 2.5)
+        self.assertEqual(pt.k.k.k, "ala ma kota")
         self.assertEqual(pt.k.k.k.f, False)
         self.assertEqual(pt.k.k.k.t, True)
         self.assertEqual(pt.k.k.k.n, None)
@@ -260,20 +258,20 @@ class TestTree(unittest.TestCase):
     def test_ptree_bad_data(self):
         pt = ptree.Tree("non-convertible string")
 
-        self.assertRaises(ptree.BadDataError, int,   pt)
+        self.assertRaises(ptree.BadDataError, int, pt)
         self.assertRaises(ptree.BadDataError, float, pt)
-        self.assertRaises(ptree.BadDataError, bool,  pt)
+        self.assertRaises(ptree.BadDataError, bool, pt)
 
     def test_bool(self):
         pt = ptree.Tree()
-        pt.add("bool.false",   "false")
-        pt.add("bool.false",   False)
-        pt.add("bool.false",   "0")
-        pt.add("bool.false",   0)
-        pt.add("bool.true",    "true")
-        pt.add("bool.true",    True)
-        pt.add("bool.true",    "1")
-        pt.add("bool.true",    1)
+        pt.add("bool.false", "false")
+        pt.add("bool.false", False)
+        pt.add("bool.false", "0")
+        pt.add("bool.false", 0)
+        pt.add("bool.true", "true")
+        pt.add("bool.true", True)
+        pt.add("bool.true", "1")
+        pt.add("bool.true", 1)
         pt.add("bool.invalid", "")
         pt.add("bool.invalid", "tt")
         pt.add("bool.invalid", "ff")
@@ -295,42 +293,41 @@ class TestTree(unittest.TestCase):
 
     def test_sort(self):
         pt = ptree.Tree()
-        pt.put("one",   "1")
-        pt.put("two",   "2")
+        pt.put("one", "1")
+        pt.put("two", "2")
         pt.put("three", "3")
-        pt.put("four",  "4")
+        pt.put("four", "4")
 
         # sort by key
         pt.sort()
 
-        self.assertEqual(pt.index("four"),  0)
+        self.assertEqual(pt.index("four"), 0)
         self.assertEqual(pt[0], 4)
 
-        self.assertEqual(pt.index("one"),   1)
+        self.assertEqual(pt.index("one"), 1)
         self.assertEqual(pt[1], 1)
 
         self.assertEqual(pt.index("three"), 2)
         self.assertEqual(pt[2], 3)
 
-        self.assertEqual(pt.index("two"),   3)
+        self.assertEqual(pt.index("two"), 3)
         self.assertEqual(pt[3], 2)
 
         # sort by value
         pt.sort(lambda lhs, rhs: int(lhs[1]) < int(rhs[1]))
 
-        self.assertEqual(pt.index("one"),   0)
+        self.assertEqual(pt.index("one"), 0)
         self.assertEqual(pt[0], 1)
 
-        self.assertEqual(pt.index("two"),   1)
+        self.assertEqual(pt.index("two"), 1)
         self.assertEqual(pt[1], 2)
 
         self.assertEqual(pt.index("three"), 2)
         self.assertEqual(pt[2], 3)
 
-        self.assertEqual(pt.index("four"),  3)
+        self.assertEqual(pt.index("four"), 3)
         self.assertEqual(pt[3], 4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
-
