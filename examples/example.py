@@ -5,19 +5,19 @@
 # ...but, on the other hand, it makes for a nice test file
 
 import requests
-import property_tree as ptree
+import proptree as ptree
 
 
-url     = 'http://api.tvmaze.com/shows'
-headers = {'Accept': "application/json", 'User-Agent' : "Mozilla/5.0"}
-params  = {'page' : 0}
+url = "http://api.tvmaze.com/shows"
+headers = {"Accept": "application/json", "User-Agent": "Mozilla/5.0"}
+params = {"page": 0}
 updated = False
 
 
 try:
     # open the json file
-    tree = ptree.json.load('tvmaze.json')
-except property_tree.JSONParserError:
+    tree = ptree.json.load("tvmaze.json")
+except proptree.JSONParserError:
     # ...or create a new Tree for the shows
     tree = ptree.Tree()
 
@@ -25,8 +25,8 @@ except property_tree.JSONParserError:
     tree.shows = ptree.Tree()
 
 
-if not tree.shows.empty():  
-    params['page'] = int(tree.shows[-1].id) // 250
+if not tree.shows.empty():
+    params["page"] = int(tree.shows[-1].id) // 250
 
 while True:
     with requests.get(url, headers=headers, params=params) as response:
@@ -44,7 +44,7 @@ while True:
             updated = True
 
     print(f"downloaded page {params['page']}")
-    params['page'] += 1
+    params["page"] += 1
 
 if updated is True:
     # sort using a python function -- builtin sort function
@@ -54,14 +54,14 @@ if updated is True:
     tree.shows.sort(lambda lhs, rhs: int(lhs[0]) < int(rhs[0]))
 
     # save the file
-    ptree.json.dump('tvmaze.json', tree, pretty_print=False)
+    ptree.json.dump("tvmaze.json", tree, pretty_print=False)
 
 
 ###############################################################################
 #                     Query (for stuff) examples                              #
 ###############################################################################
-'''
-import property_tree as ptree
+"""
+import proptree as ptree
 tree = ptree.json.load('tvmaze.json')
 
 # find all the pandas with lambda
@@ -83,4 +83,4 @@ for k, v in tree.shows.search(filter_func):
 # find all running BBC One shows where __getattribute__ might throw using list comprehension
 for show in [v for k, v in tree.shows if v.get('network.id', 0) == 12 and v.status == "Running"]:
     print(show.name)
-'''
+"""
